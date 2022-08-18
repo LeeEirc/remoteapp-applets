@@ -1,6 +1,7 @@
 ## remoteapp applets 集合
 
 ### 使用方法
+python 版本 3.10.6
 
 remoteapp 需要的 JSON 数据通过 base64 处理成参数字符串
 ```shell
