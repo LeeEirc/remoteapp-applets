@@ -1,0 +1,9 @@
+{
+  "name": "mysql_workbench8",
+  "version": "v0.0.1",
+  "path": "C:\\Program Files\\MySQL\\MySQL Workbench 8.0 CE\\MySQLWorkbench.exe",
+  "protocols": [
+    "mysql"
+  ],
+  "type": "python"
+}
