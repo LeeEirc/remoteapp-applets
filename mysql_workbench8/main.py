@@ -7,6 +7,7 @@ if sys.platform == 'win32':
     from pywinauto import Application
     from pywinauto.controls.uia_controls import (ButtonWrapper, EditWrapper, MenuItemWrapper,
                                                  MenuWrapper, ComboBoxWrapper, ToolbarWrapper)
+from common import block_input, unblock_input
 
 _default_path = r"C:\Program Files\MySQL\MySQL Workbench 8.0 CE\MySQLWorkbench.exe"
 
@@ -105,7 +106,9 @@ def main():
         base64_str = sys.argv[1]
         data.update(parse_base64_str(base64_str))
     app = MySQLWorkBench8(**data)
+    block_input()
     app.run()
+    unblock_input()
 
 
 if __name__ == '__main__':
@@ -113,3 +116,4 @@ if __name__ == '__main__':
         main()
     except Exception as e:
         print(e)
+    unblock_input()
