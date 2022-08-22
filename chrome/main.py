@@ -22,7 +22,7 @@ meta_data = {
 
 
 class StepAction:
-    find_methods = {
+    methods_map = {
         "NAME": By.NAME,
         "ID": By.ID,
         "CLASS_NAME": By.CLASS_NAME,
@@ -38,7 +38,7 @@ class StepAction:
 
     def execute(self, driver: webdriver.Chrome):
 
-        ele = driver.find_element(by=self.find_methods[self.by], value=self.identifier)
+        ele = driver.find_element(by=self.methods_map[self.by], value=self.identifier)
         if not ele:
             return False
         if self.action == 'input':
