@@ -1,0 +1,19 @@
+{
+  "name": "h3c_router",
+  "steps": [
+    {
+      "step": 1,
+      "identifier": "password",
+      "by": "NAME",
+      "value": "{password}",
+      "action": "input"
+    },
+    {
+      "step": 2,
+      "identifier": "longin_button",
+      "by": "ID",
+      "value": "",
+      "action": "click"
+    }
+  ]
+}

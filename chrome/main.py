@@ -3,8 +3,15 @@ import sys
 import os
 import base64
 import json
+from subprocess import CREATE_NO_WINDOW
 
 from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+
+from selenium.webdriver.support.ui import WebDriverWait
+
+from common import notify_err_message
 
 current_dir = os.path.dirname(__file__)
 meta_file = os.path.join(current_dir, 'manifests.json')
@@ -14,22 +21,88 @@ meta_data = {
 }
 
 
+class StepAction:
+    find_methods = {
+        "NAME": By.NAME,
+        "ID": By.ID,
+        "CLASS_NAME": By.CLASS_NAME,
+        "CSS_SELECTOR": By.CSS_SELECTOR,
+        "XPATH": By.XPATH
+    }
+
+    def __init__(self, identifier='', by='ID', value='', action='input', **kwargs):
+        self.identifier = identifier
+        self.by = by
+        self.value = value
+        self.action = action
+
+    def execute(self, driver: webdriver.Chrome):
+
+        ele = driver.find_element(by=self.find_methods[self.by], value=self.identifier)
+        if not ele:
+            return False
+        if self.action == 'input':
+            ele.send_keys(self.value)
+        elif self.action in ['click', 'button']:
+            ele.click()
+        return True
+
+
+def execute_action(driver: webdriver.Chrome, step: StepAction):
+    try:
+        step.execute(driver)
+    except Exception as e:
+        print(e)
+        notify_err_message(str(e))
+
+
+def read_app_jsons(app_dir):
+    ret = dict()
+    for file in os.listdir(app_dir):
+        if not file.endswith('.json'):
+            continue
+        with open(os.path.join(app_dir, file), 'r', encoding='utf8') as f:
+            data = json.load(f)
+            ret.update(data)
+    return ret
+
+
 class WebChrome(object):
 
-    def __init__(self, username='', password='', url=''):
+    def __init__(self, name='', username='', password='', url='', **kwargs):
         self.driver = None
         self.username = username
         self.password = password
         self.url = url
-        self.chrome_options = webdriver.ChromeOptions()
-        self.chrome_options.add_experimental_option("excludeSwitches", ['enable-automation'])
-        self.chrome_options.add_argument("start-maximized")
-        self.chrome_options.add_argument("--disable-extensions")
-        self.chrome_options.add_argument("--disable-dev-tools")
+        self.name = name
+        web_app_dir = os.path.join(current_dir, name)
+
+        self._app_datas = read_app_jsons(web_app_dir)
+
+        self._steps = sorted(self._app_datas['steps'], key=lambda item: item['step'])
+
+        self._chrome_options = webdriver.ChromeOptions()
+        self._chrome_options.add_experimental_option("excludeSwitches", ['enable-automation'])
+        self._chrome_options.add_argument("start-maximized")
+        self._chrome_options.add_argument("--disable-extensions")
+        self._chrome_options.add_argument("--disable-dev-tools")
+        prefs = {"credentials_enable_service": False,
+                 "profile.password_manager_enabled": False}
+        self._chrome_options.add_experimental_option("prefs", prefs)
 
     def run(self):
-        self.driver = webdriver.Chrome(options=self.chrome_options)
+        service = Service()
+        service.creationflags = CREATE_NO_WINDOW
+        self.driver = webdriver.Chrome(options=self._chrome_options, service=service)
+        self.driver.implicitly_wait(10)
         self.driver.get(self.url)
+        for step in self._steps:
+            val = step['value']
+            if val:
+                step['value'] = val.replace("{password}", self.password)
+            action = StepAction(**step)
+            execute_action(self.driver, action)
+
         self.driver.maximize_window()
         msg = "Unable to evaluate script: disconnected: not connected to DevTools\n"
         while True:
