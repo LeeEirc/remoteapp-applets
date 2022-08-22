@@ -1,5 +1,6 @@
 {
   "name": "h3c_router",
+  "version": "v0.0.1",
   "steps": [
     {
       "step": 1,

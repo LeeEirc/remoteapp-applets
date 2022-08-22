@@ -75,6 +75,7 @@ class WebChrome(object):
         self.password = password
         self.url = url
         self.name = name
+        self.extra_data = kwargs
         web_app_dir = os.path.join(current_dir, name)
 
         self._app_datas = read_app_jsons(web_app_dir)
@@ -86,12 +87,15 @@ class WebChrome(object):
         self._chrome_options.add_argument("start-maximized")
         self._chrome_options.add_argument("--disable-extensions")
         self._chrome_options.add_argument("--disable-dev-tools")
+
+        # 禁用 密码管理器弹窗
         prefs = {"credentials_enable_service": False,
                  "profile.password_manager_enabled": False}
         self._chrome_options.add_experimental_option("prefs", prefs)
 
     def run(self):
         service = Service()
+        #  driver 的 console 终端框不显示
         service.creationflags = CREATE_NO_WINDOW
         self.driver = webdriver.Chrome(options=self._chrome_options, service=service)
         self.driver.implicitly_wait(10)
@@ -99,7 +103,11 @@ class WebChrome(object):
         for step in self._steps:
             val = step['value']
             if val:
-                step['value'] = val.replace("{password}", self.password)
+                val = val.replace("{password}", self.password)
+                val = val.replace("{username}", self.username)
+                for k, v in self.extra_data.items():
+                    val = val.replace('{%s}' % k, v)
+            step['value'] = val
             action = StepAction(**step)
             execute_action(self.driver, action)
 
