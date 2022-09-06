@@ -3,9 +3,11 @@ import sys
 import os
 import base64
 import json
+from enum import Enum
 from subprocess import CREATE_NO_WINDOW
 
 from selenium import webdriver
+from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 
@@ -21,6 +23,25 @@ meta_data = {
 }
 
 
+class Command(Enum):
+    TYPE = 'type'
+    CLICK = 'click'
+
+
+def _execute_type(ele: WebElement, value: str):
+    ele.send_keys(value)
+
+
+def _execute_click(ele: WebElement, value: str):
+    ele.click()
+
+
+commands_func_maps = {
+    Command.CLICK: _execute_click,
+    Command.TYPE: _execute_type,
+}
+
+
 class StepAction:
     methods_map = {
         "NAME": By.NAME,
@@ -30,22 +51,26 @@ class StepAction:
         "XPATH": By.XPATH
     }
 
-    def __init__(self, identifier='', by='ID', value='', action='input', **kwargs):
+    def __init__(self, identifier='', by='ID', target='', value='', command=Command.TYPE, **kwargs):
         self.identifier = identifier
         self.by = by
         self.value = value
-        self.action = action
+        self.command = command
+        self.target = target
 
     def execute(self, driver: webdriver.Chrome):
 
         ele = driver.find_element(by=self.methods_map[self.by], value=self.identifier)
         if not ele:
             return False
-        if self.action == 'input':
+        if self.command == 'type':
             ele.send_keys(self.value)
-        elif self.action in ['click', 'button']:
+        elif self.command in ['click', 'button']:
             ele.click()
         return True
+
+    def _execute_command_type(self, ele, value):
+        ele.send_keys(value)
 
 
 def execute_action(driver: webdriver.Chrome, step: StepAction):
@@ -99,17 +124,18 @@ class WebChrome(object):
         service.creationflags = CREATE_NO_WINDOW
         self.driver = webdriver.Chrome(options=self._chrome_options, service=service)
         self.driver.implicitly_wait(10)
-        self.driver.get(self.url)
-        for step in self._steps:
-            val = step['value']
-            if val:
-                val = val.replace("{password}", self.password)
-                val = val.replace("{username}", self.username)
-                for k, v in self.extra_data.items():
-                    val = val.replace('{%s}' % k, v)
-            step['value'] = val
-            action = StepAction(**step)
-            execute_action(self.driver, action)
+        if self.url != "":
+            self.driver.get(self.url)
+            for step in self._steps:
+                val = step['value']
+                if val:
+                    val = val.replace("{password}", self.password)
+                    val = val.replace("{username}", self.username)
+                    for k, v in self.extra_data.items():
+                        val = val.replace('{%s}' % k, v)
+                step['value'] = val
+                action = StepAction(**step)
+                execute_action(self.driver, action)
 
         self.driver.maximize_window()
         msg = "Unable to evaluate script: disconnected: not connected to DevTools\n"

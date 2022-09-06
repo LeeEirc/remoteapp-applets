@@ -7,14 +7,16 @@
       "identifier": "password",
       "by": "NAME",
       "value": "{password}",
-      "action": "input"
+      "target": "name=password",
+      "command": "type"
     },
     {
       "step": 2,
       "identifier": "longin_button",
       "by": "ID",
       "value": "",
-      "action": "click"
+      "target": "id=longin_button",
+      "command": "click"
     }
   ]
 }
