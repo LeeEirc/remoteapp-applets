@@ -82,12 +82,14 @@ def execute_action(driver: webdriver.Chrome, step: StepAction) -> bool:
 
 
 def read_app_jsons(app_dir):
+    ret = dict()
     for file in os.listdir(app_dir):
         if not file.endswith('.json'):
             continue
         with open(os.path.join(app_dir, file), 'r', encoding='utf8') as f:
             data = json.load(f)
-            return data
+            ret.update(data)
+    return ret
 
 
 class WebAPP(object):
