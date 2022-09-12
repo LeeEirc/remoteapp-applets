@@ -1,3 +1,4 @@
+# -*-coding=utf-8 -*-
 import base64
 import json
 import os.path
@@ -7,7 +8,8 @@ if sys.platform == 'win32':
     from pywinauto import Application
     from pywinauto.controls.uia_controls import (ButtonWrapper, EditWrapper, MenuItemWrapper,
                                                  MenuWrapper, ComboBoxWrapper, ToolbarWrapper)
-from common import block_input, unblock_input
+from common import \
+    (block_input, unblock_input, terminate_rdp_session, wait_pid, )
 
 _default_path = r"C:\Program Files\MySQL\MySQL Workbench 8.0 CE\MySQLWorkbench.exe"
 
@@ -32,11 +34,12 @@ class MySQLWorkBench8(object):
         self.host = host
         self.port = port
         self.db = db
+        self.pid = None
 
     def run(self):
         app = Application(backend='uia')
         app.start(self.path)
-
+        self.pid = app.process
         if not any([self.username, self.password, self.host]):
             print(f'缺少必要的参数')
             return
@@ -109,6 +112,7 @@ def main():
     block_input()
     app.run()
     unblock_input()
+    wait_pid(app.pid)
 
 
 if __name__ == '__main__':
@@ -116,4 +120,4 @@ if __name__ == '__main__':
         main()
     except Exception as e:
         print(e)
-    unblock_input()
+    terminate_rdp_session()

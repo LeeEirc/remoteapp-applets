@@ -1,3 +1,4 @@
+import subprocess
 import sys
 
 _blockInput = None
@@ -29,3 +30,11 @@ def unblock_input():
 def notify_err_message(msg):
     if _messageBox:
         _messageBox(msg, 'Error')
+
+
+def terminate_rdp_session():
+    """
+    执行 windows tsdiscon 命令 关闭当前远程会话
+    :return:
+    """
+    subprocess.call(['tsdiscon'])

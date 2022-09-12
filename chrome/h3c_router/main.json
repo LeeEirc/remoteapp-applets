@@ -4,16 +4,12 @@
   "steps": [
     {
       "step": 1,
-      "identifier": "password",
-      "by": "NAME",
-      "value": "{password}",
+      "value": "{PASSWORD}",
       "target": "name=password",
       "command": "type"
     },
     {
       "step": 2,
-      "identifier": "longin_button",
-      "by": "ID",
       "value": "",
       "target": "id=longin_button",
       "command": "click"

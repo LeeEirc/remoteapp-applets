@@ -13,7 +13,8 @@ from selenium.webdriver.chrome.service import Service
 
 from selenium.webdriver.support.ui import WebDriverWait
 
-from common import notify_err_message
+from common import (notify_err_message, block_input, unblock_input,
+                    terminate_rdp_session)
 
 current_dir = os.path.dirname(__file__)
 meta_file = os.path.join(current_dir, 'manifests.json')
@@ -51,16 +52,14 @@ class StepAction:
         "XPATH": By.XPATH
     }
 
-    def __init__(self, identifier='', by='ID', target='', value='', command=Command.TYPE, **kwargs):
-        self.identifier = identifier
-        self.by = by
+    def __init__(self, target='', value='', command=Command.TYPE, **kwargs):
+        self.target = target
         self.value = value
         self.command = command
-        self.target = target
 
-    def execute(self, driver: webdriver.Chrome):
-
-        ele = driver.find_element(by=self.methods_map[self.by], value=self.identifier)
+    def execute(self, driver: webdriver.Chrome) -> bool:
+        target_name, target_value = self.target.split("=", 1)
+        ele = driver.find_element(by=self.methods_map[target_name.upper()], value=target_value)
         if not ele:
             return False
         if self.command == 'type':
@@ -73,39 +72,87 @@ class StepAction:
         ele.send_keys(value)
 
 
-def execute_action(driver: webdriver.Chrome, step: StepAction):
+def execute_action(driver: webdriver.Chrome, step: StepAction) -> bool:
     try:
-        step.execute(driver)
+        return step.execute(driver)
     except Exception as e:
         print(e)
         notify_err_message(str(e))
+        return False
 
 
 def read_app_jsons(app_dir):
-    ret = dict()
     for file in os.listdir(app_dir):
         if not file.endswith('.json'):
             continue
         with open(os.path.join(app_dir, file), 'r', encoding='utf8') as f:
             data = json.load(f)
-            ret.update(data)
-    return ret
+            return data
+
+
+class WebAPP(object):
+
+    def __init__(self, app_name="", username='', password='', **kwargs):
+        self.app_name = app_name
+        self.username = username
+        self.password = password
+        self.extra_data = kwargs
+        web_app_dir = os.path.join(current_dir, app_name)
+
+        self._app_datas = read_app_jsons(web_app_dir)
+        self._steps = None
+        if self._app_datas:
+            self._steps = sorted(self._app_datas['steps'], key=lambda item: item['step'])
+        else:
+            self._steps = self._default_custom_steps()
+
+    def _default_custom_steps(self):
+        default_steps = [
+            {
+                "step": 1,
+                "value": self.username,
+                "target": self.extra_data.get('username_target'),
+                "command": "type"
+            },
+            {
+                "step": 2,
+                "value": self.password,
+                "target": self.extra_data.get('password_target'),
+                "command": "type"
+            },
+            {
+                "step": 3,
+                "value": "",
+                "target": self.extra_data.get('btn_target'),
+                "command": "click"
+            }
+        ]
+        return default_steps
+
+    def execute(self, driver: webdriver.Chrome) -> bool:
+
+        for step in self._steps:
+            val = step['value']
+            if val:
+                val = val.replace("{USERNAME}", self.username)
+                val = val.replace("{PASSWORD}", self.password)
+                for k, v in self.extra_data.items():
+                    val = val.replace('{%s}' % k.upper(), v)
+            step['value'] = val
+            action = StepAction(**step)
+            ret = execute_action(driver, action)
+            if not ret:
+                return False
+        return True
 
 
 class WebChrome(object):
 
-    def __init__(self, name='', username='', password='', url='', **kwargs):
+    def __init__(self, url='', **kwargs):
         self.driver = None
-        self.username = username
-        self.password = password
         self.url = url
-        self.name = name
         self.extra_data = kwargs
-        web_app_dir = os.path.join(current_dir, name)
-
-        self._app_datas = read_app_jsons(web_app_dir)
-
-        self._steps = sorted(self._app_datas['steps'], key=lambda item: item['step'])
+        self.app = WebAPP(**kwargs)
 
         self._chrome_options = webdriver.ChromeOptions()
         self._chrome_options.add_experimental_option("excludeSwitches", ['enable-automation'])
@@ -126,18 +173,14 @@ class WebChrome(object):
         self.driver.implicitly_wait(10)
         if self.url != "":
             self.driver.get(self.url)
-            for step in self._steps:
-                val = step['value']
-                if val:
-                    val = val.replace("{password}", self.password)
-                    val = val.replace("{username}", self.username)
-                    for k, v in self.extra_data.items():
-                        val = val.replace('{%s}' % k, v)
-                step['value'] = val
-                action = StepAction(**step)
-                execute_action(self.driver, action)
+            ok = self.app.execute(self.driver)
+            if not ok:
+                notify_err_message("执行存在错误，退出")
+                return
 
         self.driver.maximize_window()
+
+    def wait_disconnected(self):
         msg = "Unable to evaluate script: disconnected: not connected to DevTools\n"
         while True:
             time.sleep(5)
@@ -149,7 +192,13 @@ class WebChrome(object):
                 if ret.get("message") == msg:
                     print(ret)
                     break
-        self.driver.close()
+
+    def close(self):
+        if self.driver:
+            try:
+                self.driver.close()
+            except Exception as e:
+                print(e)
 
 
 def get_default_meta():
@@ -179,7 +228,11 @@ def main():
         base64_str = sys.argv[1]
         data.update(parse_base64_str(base64_str))
     app = WebChrome(**data)
+    block_input()
     app.run()
+    unblock_input()
+    app.wait_disconnected()
+    app.close()
 
 
 if __name__ == '__main__':
@@ -187,3 +240,4 @@ if __name__ == '__main__':
         main()
     except Exception as e:
         print(e)
+    terminate_rdp_session()
