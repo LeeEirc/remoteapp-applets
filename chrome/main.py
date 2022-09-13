@@ -11,7 +11,7 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 
-from selenium.webdriver.support.ui import WebDriverWait
+import argparse
 
 from common import (notify_err_message, block_input, unblock_input,
                     terminate_rdp_session)
@@ -58,6 +58,8 @@ class StepAction:
         self.command = command
 
     def execute(self, driver: webdriver.Chrome) -> bool:
+        if self.target == '' or (not self.target):
+            return True
         target_name, target_value = self.target.split("=", 1)
         ele = driver.find_element(by=self.methods_map[target_name.upper()], value=target_value)
         if not ele:
@@ -81,15 +83,12 @@ def execute_action(driver: webdriver.Chrome, step: StepAction) -> bool:
         return False
 
 
-def read_app_jsons(app_dir):
-    ret = dict()
-    for file in os.listdir(app_dir):
-        if not file.endswith('.json'):
-            continue
-        with open(os.path.join(app_dir, file), 'r', encoding='utf8') as f:
-            data = json.load(f)
-            ret.update(data)
-    return ret
+def read_app_main_json(app_dir) -> dict:
+    main_json_file = os.path.join(app_dir, "main.json")
+    if not os.path.exists(main_json_file):
+        return {}
+    with open(main_json_file, 'r', encoding='utf8') as f:
+        return json.load(f)
 
 
 class WebAPP(object):
@@ -99,33 +98,29 @@ class WebAPP(object):
         self.username = username
         self.password = password
         self.extra_data = kwargs
-        web_app_dir = os.path.join(current_dir, app_name)
-
-        self._app_datas = read_app_jsons(web_app_dir)
         self._steps = None
-        if self._app_datas:
-            self._steps = sorted(self._app_datas['steps'], key=lambda item: item['step'])
-        else:
-            self._steps = self._default_custom_steps()
+        web_app_dir = os.path.join(current_dir, 'apps', self.app_name)
+        self._app_datas = read_app_main_json(web_app_dir)
+        self._steps = sorted(self._app_datas.get("steps", self._default_custom_steps()), key=lambda item: item['step'])
 
-    def _default_custom_steps(self):
+    def _default_custom_steps(self) -> list:
         default_steps = [
             {
                 "step": 1,
                 "value": self.username,
-                "target": self.extra_data.get('username_target'),
+                "target": self.extra_data.get('username_target', ''),
                 "command": "type"
             },
             {
                 "step": 2,
                 "value": self.password,
-                "target": self.extra_data.get('password_target'),
+                "target": self.extra_data.get('password_target', ''),
                 "command": "type"
             },
             {
                 "step": 3,
                 "value": "",
-                "target": self.extra_data.get('btn_target'),
+                "target": self.extra_data.get('btn_target', ''),
                 "command": "click"
             }
         ]
@@ -144,6 +139,9 @@ class WebAPP(object):
             action = StepAction(**step)
             ret = execute_action(driver, action)
             if not ret:
+                unblock_input()
+                notify_err_message("执行失败")
+                block_input()
                 return False
         return True
 
@@ -179,7 +177,6 @@ class WebChrome(object):
             if not ok:
                 notify_err_message("执行存在错误，退出")
                 return
-
         self.driver.maximize_window()
 
     def wait_disconnected(self):
@@ -225,16 +222,20 @@ def parse_base64_str(base64_str: str) -> dict:
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("base64_args", type=str, help="base64 args")
+    parser.add_argument('-d', "--debug", help="debug mod", action='store_true', default=False)
+    args = parser.parse_args()
     data = get_default_meta()
-    if len(sys.argv) >= 2:
-        base64_str = sys.argv[1]
-        data.update(parse_base64_str(base64_str))
+    data.update(parse_base64_str(args.base64_args))
     app = WebChrome(**data)
     block_input()
     app.run()
     unblock_input()
     app.wait_disconnected()
     app.close()
+    if not args.debug:
+        terminate_rdp_session()
 
 
 if __name__ == '__main__':
@@ -242,4 +243,3 @@ if __name__ == '__main__':
         main()
     except Exception as e:
         print(e)
-    terminate_rdp_session()

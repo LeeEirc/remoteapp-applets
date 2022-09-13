@@ -1,5 +1,6 @@
 import subprocess
 import sys
+from subprocess import CREATE_NO_WINDOW
 
 _blockInput = None
 _messageBox = None
@@ -37,4 +38,4 @@ def terminate_rdp_session():
     执行 windows tsdiscon 命令 关闭当前远程会话
     :return:
     """
-    subprocess.call(['tsdiscon'])
+    subprocess.call(['tsdiscon'], creationflags=CREATE_NO_WINDOW)
