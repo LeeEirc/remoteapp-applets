@@ -61,7 +61,8 @@ class StepAction:
         if self.target == '' or (not self.target):
             return True
         target_name, target_value = self.target.split("=", 1)
-        ele = driver.find_element(by=self.methods_map[target_name.upper()], value=target_value)
+        by_name = self.methods_map.get(target_name.upper(), By.NAME)
+        ele = driver.find_element(by=by_name, value=target_value)
         if not ele:
             return False
         if self.command == 'type':
@@ -175,7 +176,9 @@ class WebChrome(object):
             self.driver.get(self.url)
             ok = self.app.execute(self.driver)
             if not ok:
+                unblock_input()
                 notify_err_message("执行存在错误，退出")
+                block_input()
                 return
         self.driver.maximize_window()
 
