@@ -25,7 +25,7 @@ meta_data = {
 class MySQLWorkBench8(object):
 
     def __init__(self, path=_default_path, username="", password='',
-                 host='', port='', db='', **kwargs):
+                 host='', port='', db_name='', **kwargs):
         self.path = path
         if not self.path:
             self.path = _default_path
@@ -33,7 +33,7 @@ class MySQLWorkBench8(object):
         self.password = password
         self.host = host
         self.port = port
-        self.db = db
+        self.db = db_name
         self.pid = None
 
     def run(self):
