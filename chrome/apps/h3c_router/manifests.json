@@ -1,0 +1,6 @@
+{
+  "name": "h3c_router",
+  "version": "v0.0.1",
+  "type": "python",
+  "steps": "steps.json"
+}

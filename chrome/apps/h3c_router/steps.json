@@ -1,0 +1,14 @@
+[
+  {
+    "step": 1,
+    "value": "{PASSWORD}",
+    "target": "name=password",
+    "command": "type"
+  },
+  {
+    "step": 2,
+    "value": "",
+    "target": "id=longin_button",
+    "command": "click"
+  }
+]

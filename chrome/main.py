@@ -1,5 +1,4 @@
 import time
-import sys
 import os
 import base64
 import json
@@ -85,7 +84,7 @@ def execute_action(driver: webdriver.Chrome, step: StepAction) -> bool:
 
 
 def read_app_main_json(app_dir) -> dict:
-    main_json_file = os.path.join(app_dir, "main.json")
+    main_json_file = os.path.join(app_dir, "manifests.json")
     if not os.path.exists(main_json_file):
         return {}
     with open(main_json_file, 'r', encoding='utf8') as f:
