@@ -1,5 +1,8 @@
 {
+  "name": "plsql",
   "version": "v0.0.1",
+  "exec_type": "python",
+  "connect_type": "application",
   "path": "C:\\Program Files\\PLSQL Developer 12\\plsqldev.exe",
   "protocols": [
     "oracle"
