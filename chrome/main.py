@@ -236,8 +236,6 @@ def main():
     unblock_input()
     app.wait_disconnected()
     app.close()
-    if not args.debug:
-        terminate_rdp_session()
 
 
 if __name__ == '__main__':
