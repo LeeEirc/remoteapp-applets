@@ -4,16 +4,15 @@ import base64
 import json
 from enum import Enum
 from subprocess import CREATE_NO_WINDOW
+import argparse
 
 from selenium import webdriver
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 
-import argparse
-
-from common import (notify_err_message, block_input, unblock_input,
-                    terminate_rdp_session)
+from common import (notify_err_message, block_input, unblock_input)
+from model import (Asset, User, Account, Platform)
 
 current_dir = os.path.dirname(__file__)
 meta_file = os.path.join(current_dir, 'manifests.json')
@@ -26,6 +25,7 @@ meta_data = {
 class Command(Enum):
     TYPE = 'type'
     CLICK = 'click'
+    OPEN = 'open'
 
 
 def _execute_type(ele: WebElement, value: str):
@@ -39,6 +39,7 @@ def _execute_click(ele: WebElement, value: str):
 commands_func_maps = {
     Command.CLICK: _execute_click,
     Command.TYPE: _execute_type,
+    Command.OPEN: _execute_type,
 }
 
 
@@ -48,6 +49,7 @@ class StepAction:
         "ID": By.ID,
         "CLASS_NAME": By.CLASS_NAME,
         "CSS_SELECTOR": By.CSS_SELECTOR,
+        "CSS": By.CSS_SELECTOR,
         "XPATH": By.XPATH
     }
 
@@ -57,7 +59,7 @@ class StepAction:
         self.command = command
 
     def execute(self, driver: webdriver.Chrome) -> bool:
-        if self.target == '' or (not self.target):
+        if not self.target:
             return True
         target_name, target_value = self.target.split("=", 1)
         by_name = self.methods_map.get(target_name.upper(), By.NAME)
@@ -68,6 +70,8 @@ class StepAction:
             ele.send_keys(self.value)
         elif self.command in ['click', 'button']:
             ele.click()
+        elif self.command in ['open']:
+            driver.get(self.value)
         return True
 
     def _execute_command_type(self, ele, value):
@@ -93,49 +97,58 @@ def read_app_main_json(app_dir) -> dict:
 
 class WebAPP(object):
 
-    def __init__(self, app_name="", username='', password='', **kwargs):
+    def __init__(self, app_name: str = '', user: dict = None, asset: dict = None,
+                 account: dict = None, platform: dict = None, **kwargs):
         self.app_name = app_name
-        self.username = username
-        self.password = password
-        self.extra_data = kwargs
-        self._steps = None
-        web_app_dir = os.path.join(current_dir, 'apps', self.app_name)
-        self._app_datas = read_app_main_json(web_app_dir)
-        self._steps = sorted(self._app_datas.get("steps", self._default_custom_steps()), key=lambda item: item['step'])
+        self.user = User(user)
+        self.asset = Asset(asset)
+        self.account = Account(account)
+        self.platform = Platform(platform)
+
+        self.extra_data = self.asset.category_property
+        self._steps = list()
+        if self.asset.category_property.autofill == "basic":
+            self._steps = self._default_custom_steps()
+        else:
+            steps = sorted(self.asset.category_property.script, key=lambda step_item: step_item['step'])
+            for item in steps:
+                val = item['value']
+                if val:
+                    val = val.replace("{USERNAME}", self.account.username)
+                    val = val.replace("{SECRET}", self.account.secret)
+                item['value'] = val
+                self._steps.append(item)
 
     def _default_custom_steps(self) -> list:
+        account = self.account
+        category_property = self.asset.category_property
         default_steps = [
             {
                 "step": 1,
-                "value": self.username,
-                "target": self.extra_data.get('username_target', ''),
+                "value": account.username,
+                "target": category_property.username_selector,
                 "command": "type"
             },
             {
                 "step": 2,
-                "value": self.password,
-                "target": self.extra_data.get('password_target', ''),
+                "value": account.secret,
+                "target": category_property.password_selector,
                 "command": "type"
             },
             {
                 "step": 3,
                 "value": "",
-                "target": self.extra_data.get('btn_target', ''),
+                "target": category_property.submit_selector,
                 "command": "click"
             }
         ]
         return default_steps
 
     def execute(self, driver: webdriver.Chrome) -> bool:
+        if not self.asset.address:
+            return True
 
         for step in self._steps:
-            val = step['value']
-            if val:
-                val = val.replace("{USERNAME}", self.username)
-                val = val.replace("{PASSWORD}", self.password)
-                for k, v in self.extra_data.items():
-                    val = val.replace('{%s}' % k.upper(), v)
-            step['value'] = val
             action = StepAction(**step)
             ret = execute_action(driver, action)
             if not ret:
@@ -146,24 +159,28 @@ class WebAPP(object):
         return True
 
 
+def default_chrome_driver_options():
+    options = webdriver.ChromeOptions()
+    options.add_argument("start-maximized")
+    # 禁用 扩展
+    options.add_argument("--disable-extensions")
+    # 禁用开发者工具
+    options.add_argument("--disable-dev-tools")
+    # 禁用 密码管理器弹窗
+    prefs = {"credentials_enable_service": False,
+             "profile.password_manager_enabled": False}
+    options.add_experimental_option("prefs", prefs)
+    options.add_experimental_option("excludeSwitches", ['enable-automation'])
+    return options
+
+
 class WebChrome(object):
 
-    def __init__(self, url='', **kwargs):
+    def __init__(self, **kwargs):
         self.driver = None
-        self.url = url
         self.extra_data = kwargs
         self.app = WebAPP(**kwargs)
-
-        self._chrome_options = webdriver.ChromeOptions()
-        self._chrome_options.add_experimental_option("excludeSwitches", ['enable-automation'])
-        self._chrome_options.add_argument("start-maximized")
-        self._chrome_options.add_argument("--disable-extensions")
-        self._chrome_options.add_argument("--disable-dev-tools")
-
-        # 禁用 密码管理器弹窗
-        prefs = {"credentials_enable_service": False,
-                 "profile.password_manager_enabled": False}
-        self._chrome_options.add_experimental_option("prefs", prefs)
+        self._chrome_options = default_chrome_driver_options()
 
     def run(self):
         service = Service()
@@ -171,13 +188,14 @@ class WebChrome(object):
         service.creationflags = CREATE_NO_WINDOW
         self.driver = webdriver.Chrome(options=self._chrome_options, service=service)
         self.driver.implicitly_wait(10)
-        if self.url != "":
-            self.driver.get(self.url)
+        if self.app.asset.address != "":
+            self.driver.get(self.app.asset.address)
             ok = self.app.execute(self.driver)
             if not ok:
                 unblock_input()
                 notify_err_message("执行存在错误，退出")
                 block_input()
+                self.close()
                 return
         self.driver.maximize_window()
 
@@ -193,6 +211,7 @@ class WebChrome(object):
                 if ret.get("message") == msg:
                     print(ret)
                     break
+        self.close()
 
     def close(self):
         if self.driver:
@@ -235,7 +254,6 @@ def main():
     app.run()
     unblock_input()
     app.wait_disconnected()
-    app.close()
 
 
 if __name__ == '__main__':
