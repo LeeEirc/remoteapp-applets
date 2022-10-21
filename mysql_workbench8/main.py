@@ -17,7 +17,7 @@ current_dir = os.path.dirname(__file__)
 meta_file = os.path.join(current_dir, 'manifests.json')
 meta_data = {
     'path': _default_path,
-    'type': 'python',
+    'exec_type': 'python',
     'protocols': ['mysql'],
 }
 

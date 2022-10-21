@@ -4,5 +4,6 @@
   "protocols": [
     "web"
   ],
-  "type": "python"
+  "exec_type": "python",
+  "connect_type": "web"
 }

@@ -1,10 +1,9 @@
 import time
 import os
-import base64
 import json
 from enum import Enum
 from subprocess import CREATE_NO_WINDOW
-import argparse
+import sys
 
 from selenium import webdriver
 from selenium.webdriver.remote.webelement import WebElement
@@ -12,7 +11,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 
 from common import (notify_err_message, block_input, unblock_input)
-from model import (Asset, User, Account, Platform)
+from common import (BaseApplication, get_manifest_data, convert_base64_to_json)
+from common import (Asset, User, Account, Platform)
 
 current_dir = os.path.dirname(__file__)
 meta_file = os.path.join(current_dir, 'manifests.json')
@@ -97,13 +97,13 @@ def read_app_main_json(app_dir) -> dict:
 
 class WebAPP(object):
 
-    def __init__(self, app_name: str = '', user: dict = None, asset: dict = None,
-                 account: dict = None, platform: dict = None, **kwargs):
+    def __init__(self, app_name: str = '', user: User = None, asset: Asset = None,
+                 account: Account = None, platform: Platform = None, **kwargs):
         self.app_name = app_name
-        self.user = User(user)
-        self.asset = Asset(asset)
-        self.account = Account(account)
-        self.platform = Platform(platform)
+        self.user = user
+        self.asset = asset
+        self.account = account
+        self.platform = platform
 
         self.extra_data = self.asset.category_property
         self._steps = list()
@@ -153,7 +153,7 @@ class WebAPP(object):
             ret = execute_action(driver, action)
             if not ret:
                 unblock_input()
-                notify_err_message("执行失败")
+                notify_err_message(f"执行失败: target: {action.target} command: {action.command}")
                 block_input()
                 return False
         return True
@@ -174,12 +174,15 @@ def default_chrome_driver_options():
     return options
 
 
-class WebChrome(object):
+class WebChrome(BaseApplication):
 
     def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        app_name = kwargs.get('app_name', '')
         self.driver = None
         self.extra_data = kwargs
-        self.app = WebAPP(**kwargs)
+        self.app = WebAPP(app_name=app_name, user=self.user,
+                          account=self.account, asset=self.asset, platform=self.platform)
         self._chrome_options = default_chrome_driver_options()
 
     def run(self):
@@ -199,7 +202,7 @@ class WebChrome(object):
                 return
         self.driver.maximize_window()
 
-    def wait_disconnected(self):
+    def wait(self):
         msg = "Unable to evaluate script: disconnected: not connected to DevTools\n"
         while True:
             time.sleep(5)
@@ -221,39 +224,17 @@ class WebChrome(object):
                 print(e)
 
 
-def get_default_meta():
-    ret = {}
-    ret.update(meta_data)
-    try:
-        with open(meta_file, "r", encoding='utf8') as f:
-            file_data = json.load(f)
-            ret.update(file_data)
-    except Exception as e:
-        print(e)
-    return ret
-
-
-def parse_base64_str(base64_str: str) -> dict:
-    try:
-        data_json = base64.decodebytes(base64_str.encode('utf-8')).decode('utf-8')
-        return json.loads(data_json)
-    except Exception as e:
-        print(e)
-    return {}
-
-
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("base64_args", type=str, help="base64 args")
-    parser.add_argument('-d', "--debug", help="debug mod", action='store_true', default=False)
-    args = parser.parse_args()
-    data = get_default_meta()
-    data.update(parse_base64_str(args.base64_args))
-    app = WebChrome(**data)
+    base64_str = sys.argv[1]
+    data = dict()
+    meta_data.update(get_manifest_data())
+    data.update(convert_base64_to_json(base64_str))
+    data.update({"manifest": meta_data})
+    chrome_app = WebChrome(**data)
     block_input()
-    app.run()
+    chrome_app.run()
     unblock_input()
-    app.wait_disconnected()
+    chrome_app.wait()
 
 
 if __name__ == '__main__':
