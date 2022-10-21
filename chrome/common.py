@@ -134,6 +134,14 @@ def get_manifest_data() -> dict:
     return {}
 
 
+def read_app_manifest(app_dir) -> dict:
+    main_json_file = os.path.join(app_dir, "manifests.json")
+    if not os.path.exists(main_json_file):
+        return {}
+    with open(main_json_file, 'r', encoding='utf8') as f:
+        return json.load(f)
+
+
 def convert_base64_to_json(base64_str: str) -> dict:
     try:
         data_json = base64.decodebytes(base64_str.encode('utf-8')).decode('utf-8')
@@ -145,12 +153,13 @@ def convert_base64_to_json(base64_str: str) -> dict:
 
 class BaseApplication(abc.ABC):
 
-    def __init__(self, user: User = None, asset: Asset = None, account: Account = None, platform: Platform = None,
-                 **kwargs):
-        self.user = user
-        self.asset = asset
-        self.account = account
-        self.platform = platform
+    def __init__(self, *args, **kwargs):
+        self.app_name = kwargs.get('app_name', '')
+        self.manifest = Manifest(kwargs.get('manifest', {}))
+        self.user = User(kwargs.get('user', {}))
+        self.asset = Asset(kwargs.get('asset', {}))
+        self.account = Account(kwargs.get('account', {}))
+        self.platform = Platform(kwargs.get('platform', {}))
 
     @abc.abstractmethod
     def run(self):

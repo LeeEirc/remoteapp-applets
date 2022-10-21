@@ -1,6 +1,5 @@
 import time
 import os
-import json
 from enum import Enum
 from subprocess import CREATE_NO_WINDOW
 import sys
@@ -14,11 +13,10 @@ from common import (notify_err_message, block_input, unblock_input)
 from common import (BaseApplication, get_manifest_data, convert_base64_to_json)
 from common import (Asset, User, Account, Platform)
 
-current_dir = os.path.dirname(__file__)
-meta_file = os.path.join(current_dir, 'manifests.json')
 meta_data = {
-    'type': 'python',
     'protocols': ['web'],
+    'exec_type': 'python',
+    'connect_type': 'web'
 }
 
 
@@ -85,14 +83,6 @@ def execute_action(driver: webdriver.Chrome, step: StepAction) -> bool:
         print(e)
         notify_err_message(str(e))
         return False
-
-
-def read_app_main_json(app_dir) -> dict:
-    main_json_file = os.path.join(app_dir, "manifests.json")
-    if not os.path.exists(main_json_file):
-        return {}
-    with open(main_json_file, 'r', encoding='utf8') as f:
-        return json.load(f)
 
 
 class WebAPP(object):
@@ -176,12 +166,10 @@ def default_chrome_driver_options():
 
 class WebChrome(BaseApplication):
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        app_name = kwargs.get('app_name', '')
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.driver = None
-        self.extra_data = kwargs
-        self.app = WebAPP(app_name=app_name, user=self.user,
+        self.app = WebAPP(app_name=self.app_name, user=self.user,
                           account=self.account, asset=self.asset, platform=self.platform)
         self._chrome_options = default_chrome_driver_options()
 
@@ -226,8 +214,8 @@ class WebChrome(BaseApplication):
 
 def main():
     base64_str = sys.argv[1]
-    data = dict()
     meta_data.update(get_manifest_data())
+    data = dict()
     data.update(convert_base64_to_json(base64_str))
     data.update({"manifest": meta_data})
     chrome_app = WebChrome(**data)
