@@ -7,8 +7,6 @@ import json
 import base64
 from subprocess import CREATE_NO_WINDOW
 
-current_dir = os.path.dirname(__file__)
-
 _blockInput = None
 _messageBox = None
 if sys.platform == 'win32':
@@ -85,11 +83,15 @@ class User(DictObj):
 
 
 class CategoryProperty(DictObj):
+    # web
     autofill: str
     username_selector: str
     password_selector: str
     submit_selector: str
     script: list
+
+    # database
+    db_name: str
 
 
 class Category(DictObj):
@@ -97,13 +99,25 @@ class Category(DictObj):
     label: str
 
 
+class Protocol(DictObj):
+    id: str
+    name: str
+    port: int
+
+
 class Asset(DictObj):
     id: str
     name: str
     address: str
-    protocols: list
+    protocols: list[Protocol]
     category: Category
     category_property: CategoryProperty
+
+    def get_protocol_port(self, protocol):
+        for item in self.protocols:
+            if item.name == protocol:
+                return item.port
+        return None
 
 
 class Account(DictObj):
@@ -120,11 +134,14 @@ class Platform(DictObj):
 class Manifest(DictObj):
     name: str
     version: str
+    path: str
+    exec_type: str
+    connect_type: str
     protocols: list[str]
-    type: str
 
 
 def get_manifest_data() -> dict:
+    current_dir = os.path.dirname(__file__)
     manifest_file = os.path.join(current_dir, 'manifests.json')
     try:
         with open(manifest_file, "r", encoding='utf8') as f:
@@ -142,7 +159,7 @@ def read_app_manifest(app_dir) -> dict:
         return json.load(f)
 
 
-def convert_base64_to_json(base64_str: str) -> dict:
+def convert_base64_to_dict(base64_str: str) -> dict:
     try:
         data_json = base64.decodebytes(base64_str.encode('utf-8')).decode('utf-8')
         return json.loads(data_json)
@@ -155,6 +172,7 @@ class BaseApplication(abc.ABC):
 
     def __init__(self, *args, **kwargs):
         self.app_name = kwargs.get('app_name', '')
+        self.protocol = kwargs.get('protocol', '')
         self.manifest = Manifest(kwargs.get('manifest', {}))
         self.user = User(kwargs.get('user', {}))
         self.asset = Asset(kwargs.get('asset', {}))
