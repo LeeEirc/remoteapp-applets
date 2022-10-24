@@ -10,7 +10,7 @@ if sys.platform == 'win32':
 from common import (BaseApplication, wait_pid, )
 
 
-class OraclePLSQL(BaseApplication):
+class AppletApplication(BaseApplication):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

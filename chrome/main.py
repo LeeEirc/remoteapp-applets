@@ -2,7 +2,7 @@ import sys
 
 from common import (block_input, unblock_input)
 from common import (get_manifest_data, convert_base64_to_dict)
-from app import WebChrome
+from app import AppletApplication
 
 meta_data = {
     'protocols': ['web'],
@@ -17,7 +17,7 @@ def main():
     data = dict()
     data.update(convert_base64_to_dict(base64_str))
     data.update({"manifest": meta_data})
-    chrome_app = WebChrome(**data)
+    chrome_app = AppletApplication(**data)
     block_input()
     chrome_app.run()
     unblock_input()

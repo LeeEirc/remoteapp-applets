@@ -3,7 +3,7 @@ import sys
 
 from common import (block_input, unblock_input, )
 from common import (get_manifest_data, convert_base64_to_dict)
-from app import MySQLWorkBench8
+from app import AppletApplication
 
 _default_path = r"C:\Program Files\MySQL\MySQL Workbench 8.0 CE\MySQLWorkbench.exe"
 
@@ -21,7 +21,7 @@ def main():
     data = dict()
     data.update(convert_base64_to_dict(base64_str))
     data.update({"manifest": meta_data})
-    app = MySQLWorkBench8(**data)
+    app = AppletApplication(**data)
     block_input()
     app.run()
     unblock_input()

@@ -156,7 +156,7 @@ def default_chrome_driver_options():
     return options
 
 
-class WebChrome(BaseApplication):
+class AppletApplication(BaseApplication):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
