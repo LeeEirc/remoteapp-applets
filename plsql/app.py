@@ -9,12 +9,14 @@ if sys.platform == 'win32':
 #   process.wait()
 from common import (BaseApplication, wait_pid, )
 
+program_path = r"C:\Program Files\PLSQL Developer 12\plsqldev.exe"
+
 
 class AppletApplication(BaseApplication):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.path = self.manifest.path
+        self.path = program_path
         self.username = self.account.username
         self.password = self.account.secret
         self.host = self.asset.address

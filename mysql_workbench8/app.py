@@ -6,13 +6,15 @@ if sys.platform == 'win32':
                                                  MenuWrapper, ComboBoxWrapper, ToolbarWrapper)
 from common import (BaseApplication, wait_pid, )
 
+_default_path = r"C:\Program Files\MySQL\MySQL Workbench 8.0 CE\MySQLWorkbench.exe"
+
 
 class AppletApplication(BaseApplication):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.path = self.manifest.path
+        self.path = _default_path
         self.username = self.account.username
         self.password = self.account.secret
         self.host = self.asset.address

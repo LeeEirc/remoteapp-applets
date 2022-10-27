@@ -172,8 +172,7 @@ class BaseApplication(abc.ABC):
 
     def __init__(self, *args, **kwargs):
         self.app_name = kwargs.get('app_name', '')
-        self.protocol = kwargs.get('protocol', '')
-        self.manifest = Manifest(kwargs.get('manifest', {}))
+        self._protocol = kwargs.get('protocol', '')
         self.user = User(kwargs.get('user', {}))
         self.asset = Asset(kwargs.get('asset', {}))
         self.account = Account(kwargs.get('account', {}))
@@ -186,3 +185,7 @@ class BaseApplication(abc.ABC):
     @abc.abstractmethod
     def wait(self):
         raise NotImplementedError('wait')
+
+    @property
+    def protocol(self):
+        return self._protocol
