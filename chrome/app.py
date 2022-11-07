@@ -89,9 +89,10 @@ class WebAPP(object):
 
         self.extra_data = self.asset.specific
         self._steps = list()
-        if self.asset.specific.autofill == "basic":
+        autofill_type = self.asset.specific.autofill
+        if autofill_type == "basic":
             self._steps = self._default_custom_steps()
-        else:
+        elif autofill_type == "script":
             steps = sorted(self.asset.specific.script, key=lambda step_item: step_item['step'])
             for item in steps:
                 val = item['value']
