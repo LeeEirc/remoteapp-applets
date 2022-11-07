@@ -142,7 +142,7 @@ class Manifest(DictObj):
 
 def get_manifest_data() -> dict:
     current_dir = os.path.dirname(__file__)
-    manifest_file = os.path.join(current_dir, 'manifests.json')
+    manifest_file = os.path.join(current_dir, 'manifest.json')
     try:
         with open(manifest_file, "r", encoding='utf8') as f:
             return json.load(f)
@@ -152,7 +152,7 @@ def get_manifest_data() -> dict:
 
 
 def read_app_manifest(app_dir) -> dict:
-    main_json_file = os.path.join(app_dir, "manifests.json")
+    main_json_file = os.path.join(app_dir, "manifest.json")
     if not os.path.exists(main_json_file):
         return {}
     with open(main_json_file, 'r', encoding='utf8') as f:
