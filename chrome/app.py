@@ -87,12 +87,12 @@ class WebAPP(object):
         self.account = account
         self.platform = platform
 
-        self.extra_data = self.asset.category_property
+        self.extra_data = self.asset.specific
         self._steps = list()
-        if self.asset.category_property.autofill == "basic":
+        if self.asset.specific.autofill == "basic":
             self._steps = self._default_custom_steps()
         else:
-            steps = sorted(self.asset.category_property.script, key=lambda step_item: step_item['step'])
+            steps = sorted(self.asset.specific.script, key=lambda step_item: step_item['step'])
             for item in steps:
                 val = item['value']
                 if val:
@@ -103,24 +103,24 @@ class WebAPP(object):
 
     def _default_custom_steps(self) -> list:
         account = self.account
-        category_property = self.asset.category_property
+        specific_property = self.asset.specific
         default_steps = [
             {
                 "step": 1,
                 "value": account.username,
-                "target": category_property.username_selector,
+                "target": specific_property.username_selector,
                 "command": "type"
             },
             {
                 "step": 2,
                 "value": account.secret,
-                "target": category_property.password_selector,
+                "target": specific_property.password_selector,
                 "command": "type"
             },
             {
                 "step": 3,
                 "value": "",
-                "target": category_property.submit_selector,
+                "target": specific_property.submit_selector,
                 "command": "click"
             }
         ]
