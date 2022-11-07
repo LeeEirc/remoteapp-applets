@@ -1,0 +1,8 @@
+name: chrome
+version: 0.1
+exec_type: python
+type: web
+tags:
+  - web
+protocols:
+  - web
