@@ -13,3 +13,9 @@ pip download -d  pip_packages -r requirements.txt
 ```shell
 pip install --no-index --find-links=./pip_packages -r requirements.txt
 ```
+
+跨平台离线下载依赖包
+```shell
+mkdir pip_packages
+pip download --only-binary=:all:  -d pip_packages  --platform win_amd64  --python-version 3.10.8 --abi cp310 -r requirements.txt
+```
