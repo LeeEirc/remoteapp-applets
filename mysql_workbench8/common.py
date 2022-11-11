@@ -82,7 +82,7 @@ class User(DictObj):
     username: str
 
 
-class CategoryProperty(DictObj):
+class Specific(DictObj):
     # web
     autofill: str
     username_selector: str
@@ -111,7 +111,7 @@ class Asset(DictObj):
     address: str
     protocols: list[Protocol]
     category: Category
-    category_property: CategoryProperty
+    specific: Specific
 
     def get_protocol_port(self, protocol):
         for item in self.protocols:
