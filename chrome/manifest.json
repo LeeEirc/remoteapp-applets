@@ -1,9 +1,0 @@
-{
-  "name": "chrome",
-  "version": "v0.0.1",
-  "protocols": [
-    "web"
-  ],
-  "exec_type": "python",
-  "connect_type": "web"
-}
