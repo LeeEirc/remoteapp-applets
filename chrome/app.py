@@ -8,7 +8,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 
 from common import (Asset, User, Account, Platform)
-from common import (notify_err_message, block_input, unblock_input)
+from common import (notify_err_message)
 from common import (BaseApplication)
 
 
@@ -135,9 +135,7 @@ class WebAPP(object):
             action = StepAction(**step)
             ret = execute_action(driver, action)
             if not ret:
-                unblock_input()
                 notify_err_message(f"执行失败: target: {action.target} command: {action.command}")
-                block_input()
                 return False
         return True
 
@@ -176,9 +174,7 @@ class AppletApplication(BaseApplication):
             self.driver.get(self.app.asset.address)
             ok = self.app.execute(self.driver)
             if not ok:
-                unblock_input()
                 notify_err_message("执行存在错误，退出")
-                block_input()
                 self.close()
                 return
         self.driver.maximize_window()
