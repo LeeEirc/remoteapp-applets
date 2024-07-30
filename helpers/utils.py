@@ -1,4 +1,5 @@
 from pywinauto.application import Application, WindowSpecification
+from pywinauto import Desktop
 
 
 # 通过进程ID获取应用程序的句柄
@@ -20,3 +21,7 @@ def minimize_app_windows(app: Application):
 # 最大化 maximize()
 def maximize_app_windows(app: Application, win_spec: WindowSpecification):
     win_spec.restore().set_focus()
+
+
+def send_keys(win_spec: WindowSpecification, keys: str):
+    win_spec.type_keys(keys)
