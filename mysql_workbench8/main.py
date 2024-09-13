@@ -9,9 +9,7 @@ def main():
     base64_str = sys.argv[1]
     data = convert_base64_to_dict(base64_str)
     applet_app = AppletApplication(**data)
-    block_input()
     applet_app.run()
-    unblock_input()
     applet_app.wait()
 
 
