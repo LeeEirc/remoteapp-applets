@@ -177,20 +177,27 @@ class WebAPP(object):
                 return False
         return True
 
-
 def default_chrome_driver_options():
     options = webdriver.ChromeOptions()
-    options.add_argument("start-maximized")
-    # 禁用 扩展
-    options.add_argument("--disable-extensions")
+    options.add_argument("--start-maximized")
+
+    # 忽略证书错误相关
+    options.add_argument('--ignore-ssl-errors')
+    options.add_argument('--ignore-certificate-errors')
+    options.add_argument('--ignore-certificate-errors-spki-list')
+    options.add_argument('--allow-running-insecure-content')
+
     # 禁用开发者工具
     options.add_argument("--disable-dev-tools")
     # 禁用 密码管理器弹窗
-    prefs = {"credentials_enable_service": False,
-             "profile.password_manager_enabled": False}
+    prefs = {
+        "credentials_enable_service": False,
+        "profile.password_manager_enabled": False
+    }
     options.add_experimental_option("prefs", prefs)
     options.add_experimental_option("excludeSwitches", ['enable-automation'])
     return options
+
 
 
 class AppletApplication(BaseApplication):
