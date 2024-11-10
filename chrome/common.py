@@ -5,6 +5,7 @@ import time
 import os
 import json
 import base64
+import psutil
 from subprocess import CREATE_NO_WINDOW
 
 _blockInput = None
@@ -186,3 +187,17 @@ class BaseApplication(abc.ABC):
     @abc.abstractmethod
     def wait(self):
         raise NotImplementedError('wait')
+
+
+def get_child_process_pid(pid):
+    parent_process = psutil.Process(pid)
+    children_pids = parent_process.children(recursive=True)
+    return [p.pid for p in children_pids]
+
+
+def is_process_alive(pid):
+    try:
+        p = psutil.Process(pid)
+        return p.is_running()
+    except psutil.NoSuchProcess:
+        return False

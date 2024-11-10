@@ -244,3 +244,4 @@ class AppletApplication(BaseApplication):
                 self.driver.close()
             except Exception as e:
                 print(e)
+
