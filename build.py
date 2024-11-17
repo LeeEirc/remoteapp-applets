@@ -31,25 +31,24 @@ def zip_applet(applet_path, dst_dir):
     if not os.path.exists(dst_dir):
         os.makedirs(dst_dir)
         print(f'creat zip build folder: {dst_dir}')
-    with change_dir(dir_path):
+    app_config = read_applet_config(applet_path)
+    if app_config.get("name"):
+        applets_index.append(app_config)
+    applet_name = os.path.basename(applet_path)
+    zip_name = os.path.join(dst_dir, applet_name + '.zip')
 
-        app_config = read_applet_config(applet_path)
-        if app_config.get("name"):
-            applets_index.append(app_config)
-        applet_name = os.path.basename(applet_path)
-        zip_name = os.path.join(dst_dir, applet_name + '.zip')
-
-        filelist = []
-        if os.path.isfile(applet_path):
-            filelist.append(applet_path)
-        else:
-            for root, dirs, files in os.walk(applet_name):
-                for name in files:
-                    filelist.append(os.path.join(root, name))
-        with zipfile.ZipFile(zip_name, "w", zipfile.ZIP_DEFLATED) as zf:
-            for tar in filelist:
-                zf.write(tar, tar)
-        print(f'zip  {applet_name} applet to {zip_name} success')
+    filelist = []
+    if os.path.isfile(applet_path):
+        filelist.append(applet_path)
+    else:
+        for root, dirs, files in os.walk(applet_name):
+            for name in files:
+                filelist.append(os.path.join(root, name))
+    with zipfile.ZipFile(zip_name, "w", zipfile.ZIP_DEFLATED) as zf:
+        for tar in filelist:
+            arcname = os.path.relpath(tar, dir_path)
+            zf.write(tar, arcname)
+    print(f'zip  {applet_name} applet to {zip_name} success')
 
 
 ignore_dirs = ['dist', 'node_modules', 'build', 'venv', '.git', '.idea', '.vscode',
