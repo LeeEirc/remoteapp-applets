@@ -245,3 +245,21 @@ class AppletApplication(BaseApplication):
             except Exception as e:
                 print(e)
 
+def get_children_pids(parent_pid):
+    import subprocess
+    from common import decode_content
+    pids = []
+    # wmic process where (ParentProcessId={5088}) get ProcessId
+    try:
+        cmd = ['wmic', 'process', 'where', f'(ParentProcessId={parent_pid})', 'get', 'ProcessId']
+        ret = subprocess.check_output(cmd, creationflags=CREATE_NO_WINDOW)
+        content = decode_content(ret)
+        content_list = content.strip().split("\r\n")
+        for pid in content_list[1:]:
+            pid = pid.strip()
+            if pid:
+                pids.append(int(pid))
+
+    except Exception as e:
+        pass
+    return pids

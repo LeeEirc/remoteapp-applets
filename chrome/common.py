@@ -5,6 +5,7 @@ import time
 import os
 import json
 import base64
+import locale
 import psutil
 from subprocess import CREATE_NO_WINDOW
 
@@ -201,3 +202,12 @@ def is_process_alive(pid):
         return p.is_running()
     except psutil.NoSuchProcess:
         return False
+
+def decode_content(content: bytes) -> str:
+    for encoding_name in ['utf-8', 'gbk', 'gb2312']:
+        try:
+            return content.decode(encoding_name)
+        except Exception as e:
+            print(e)
+    encoding_name = locale.getpreferredencoding()
+    return content.decode(encoding_name)
